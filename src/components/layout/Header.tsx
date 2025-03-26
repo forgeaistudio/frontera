@@ -1,11 +1,12 @@
-
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, Menu, X } from "lucide-react";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+  const isLandingPage = location.pathname === "/";
   
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -18,45 +19,49 @@ export function Header() {
             Frontera
           </Link>
           
-          <nav className="hidden md:flex space-x-1">
-            <NavLink to="/dashboard">Dashboard</NavLink>
-            <NavLink to="/inventory">Inventory</NavLink>
-            <NavLink to="/tracts">Tracts</NavLink>
-            <NavLink to="/resources">Resources</NavLink>
-          </nav>
+          {isLandingPage && (
+            <nav className="hidden md:flex space-x-1">
+              <NavLink to="/dashboard">Dashboard</NavLink>
+              <NavLink to="/inventory">Inventory</NavLink>
+              <NavLink to="/tracts">Tracts</NavLink>
+              <NavLink to="/resources">Resources</NavLink>
+            </nav>
+          )}
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
-            <Search className="h-5 w-5" />
-          </Button>
-          
-          <Link to="/profile">
-            <Button variant="ghost" className="hidden md:flex items-center gap-2">
-              <span className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">
-                JD
-              </span>
-              <span className="hidden lg:inline-block">Profile</span>
+        {isLandingPage ? (
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="icon" className="text-muted-foreground">
+              <Search className="h-5 w-5" />
             </Button>
-          </Link>
-          
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </Button>
-        </div>
+            
+            <Link to="/profile">
+              <Button variant="ghost" className="hidden md:flex items-center gap-2">
+                <span className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">
+                  JD
+                </span>
+                <span className="hidden lg:inline-block">Profile</span>
+              </Button>
+            </Link>
+            
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+        ) : null}
       </div>
       
-      {/* Mobile menu */}
-      {isMenuOpen && (
+      {/* Mobile menu - only shown on landing page */}
+      {isLandingPage && isMenuOpen && (
         <div className="md:hidden px-4 py-2 bg-card border-b border-border animate-in">
           <nav className="flex flex-col space-y-1 pb-3">
             <MobileNavLink to="/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</MobileNavLink>
