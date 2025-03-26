@@ -29,7 +29,7 @@ const MOCK_MESSAGES = [
       name: 'Sarah Wilson',
       avatar: 'https://i.pravatar.cc/150?img=47'
     },
-    content: 'Yes! I've been using it for 2 years now. Excellent for emergency prep and daily use.',
+    content: "Yes! I've been using it for 2 years now. Excellent for emergency prep and daily use.",
     timestamp: '2023-06-16T10:32:00Z',
     isPinned: false
   },
@@ -40,7 +40,7 @@ const MOCK_MESSAGES = [
       name: 'Mike Chen',
       avatar: 'https://i.pravatar.cc/150?img=12'
     },
-    content: 'I prefer the Sawyer mini filter for portability. It's part of my bug-out bag.',
+    content: "I prefer the Sawyer mini filter for portability. It's part of my bug-out bag.",
     timestamp: '2023-06-16T10:35:00Z',
     isPinned: false
   },
@@ -51,7 +51,7 @@ const MOCK_MESSAGES = [
       name: 'Lisa Yamada',
       avatar: 'https://i.pravatar.cc/150?img=25'
     },
-    content: 'Here's our community guide on water filtration options for different scenarios.',
+    content: "Here's our community guide on water filtration options for different scenarios.",
     timestamp: '2023-06-16T10:41:00Z',
     isPinned: true
   },
