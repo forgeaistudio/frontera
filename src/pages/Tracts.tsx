@@ -10,7 +10,6 @@ const Tracts = () => {
       <main className="flex-1 md:ml-56">
         <Container>
           <div className="py-6">
-            <h1 className="text-3xl font-bold mb-6">Tracts</h1>
             <TractsList />
           </div>
         </Container>

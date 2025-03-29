@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowRight, Bell, Package, MessageSquare, BookOpen } from "lucide-react";
+import { PreparednessScore } from "@/components/dashboard/PreparednessScore";
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -74,9 +75,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                   
-                  <Button variant="default" className="shrink-0">
-                    View Your Preparedness Score
-                  </Button>
+                  <PreparednessScore />
                 </div>
               </div>
             </div>

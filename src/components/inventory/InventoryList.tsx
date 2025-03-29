@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Search, Filter } from "lucide-react";
 import { InventoryItem } from "./InventoryItem";
+import { AddInventoryForm } from "./AddInventoryForm";
 
 // Mock inventory data
 const MOCK_INVENTORY = [
@@ -48,10 +48,7 @@ export function InventoryList() {
               Manage your preparedness supplies
             </CardDescription>
           </div>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            <span>Add Item</span>
-          </Button>
+          <AddInventoryForm />
         </CardHeader>
         
         <CardContent>

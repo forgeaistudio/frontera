@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Search, Users } from "lucide-react";
+import { Search, Users } from "lucide-react";
+import { CreateTractForm } from "./CreateTractForm";
 
 // Mock tracts data
 const MOCK_TRACTS = [
@@ -69,10 +69,7 @@ export function TractsList() {
               Connect with communities for knowledge sharing
             </CardDescription>
           </div>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            <span>Create Tract</span>
-          </Button>
+          <CreateTractForm />
         </CardHeader>
         
         <CardContent>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +9,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, Filter, BookOpen } from "lucide-react";
+import { Search, Filter, BookOpen } from "lucide-react";
 import { ResourceItem } from "./ResourceItem";
+import { AddResourceForm } from "./AddResourceForm";
 
 // Mock resources data
 const MOCK_RESOURCES = [
@@ -93,10 +93,7 @@ export function ResourcesList() {
               Knowledge hub for emergency preparedness
             </CardDescription>
           </div>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            <span>Add Resource</span>
-          </Button>
+          <AddResourceForm />
         </CardHeader>
         
         <CardContent>
