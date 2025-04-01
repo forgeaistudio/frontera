@@ -1,21 +1,23 @@
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Container } from "@/components/ui/Container";
+import { useAuth } from "@/contexts/AuthContext";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { ResourcesList } from "@/components/resources/ResourcesList";
+import { AddResourceForm } from "@/components/resources/AddResourceForm";
 
-const Resources = () => {
+export default function Resources() {
+  const { user } = useAuth();
+
   return (
-    <div className="min-h-screen flex">
-      <Sidebar />
-      
-      <main className="flex-1 md:ml-56">
-        <Container>
-          <div className="py-6">
-            <ResourcesList />
+    <AppLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Resources</h1>
+            <p className="text-muted-foreground">Access and manage your preparedness resources</p>
           </div>
-        </Container>
-      </main>
-    </div>
+          <AddResourceForm />
+        </div>
+        <ResourcesList />
+      </div>
+    </AppLayout>
   );
-};
-
-export default Resources;
+}

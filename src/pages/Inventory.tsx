@@ -1,21 +1,23 @@
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Container } from "@/components/ui/Container";
+import { useAuth } from "@/contexts/AuthContext";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { InventoryList } from "@/components/inventory/InventoryList";
+import { AddInventoryForm } from "@/components/inventory/AddInventoryForm";
 
-const Inventory = () => {
+export default function Inventory() {
+  const { user } = useAuth();
+
   return (
-    <div className="min-h-screen flex">
-      <Sidebar />
-      
-      <main className="flex-1 md:ml-56">
-        <Container>
-          <div className="py-6">
-            <InventoryList />
+    <AppLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Inventory</h1>
+            <p className="text-muted-foreground">Manage your supplies and equipment</p>
           </div>
-        </Container>
-      </main>
-    </div>
+          <AddInventoryForm />
+        </div>
+        <InventoryList />
+      </div>
+    </AppLayout>
   );
-};
-
-export default Inventory;
+}

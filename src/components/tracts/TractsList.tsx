@@ -1,136 +1,120 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Users } from "lucide-react";
-import { CreateTractForm } from "./CreateTractForm";
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '../ui/card';
+import { Input } from '../ui/input';
+import { getTractsList, deleteTract } from '@/lib/api';
+import { Database } from '@/lib/database.types';
+import { Button } from '../ui/button';
+import { Trash2, Users } from 'lucide-react';
+import { useToast } from '../ui/use-toast';
+import { Badge } from '../ui/badge';
 
-// Mock tracts data
-const MOCK_TRACTS = [
-  { 
-    id: '1', 
-    name: 'Urban Preppers', 
-    description: 'Preparing for emergencies in urban environments',
-    members: 128,
-    lastActive: '2023-06-15T12:30:00Z',
-    tags: ['Urban', 'Beginner-Friendly'],
-    image: 'https://i.pravatar.cc/150?img=1'
-  },
-  { 
-    id: '2', 
-    name: 'Water Purification', 
-    description: 'Discussion on water filtration, purification, and storage',
-    members: 64,
-    lastActive: '2023-06-14T10:15:00Z',
-    tags: ['Water', 'Technical'],
-    image: 'https://i.pravatar.cc/150?img=2'
-  },
-  { 
-    id: '3', 
-    name: 'First Aid Skills', 
-    description: 'Learn and share medical skills for emergencies',
-    members: 95,
-    lastActive: '2023-06-16T09:45:00Z',
-    tags: ['Medical', 'Skills'],
-    image: 'https://i.pravatar.cc/150?img=3'
-  },
-  { 
-    id: '4', 
-    name: 'Food Preservation', 
-    description: 'Techniques for preserving food long-term',
-    members: 76,
-    lastActive: '2023-06-13T14:20:00Z',
-    tags: ['Food', 'Self-Sufficiency'],
-    image: 'https://i.pravatar.cc/150?img=4'
-  },
-];
+type Tract = Database['public']['Tables']['tracts']['Row'];
 
-export function TractsList() {
-  const [tracts] = useState(MOCK_TRACTS);
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  // Filter tracts based on search query
-  const filteredTracts = tracts.filter(tract => 
-    tract.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tract.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tract.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-  
+export default function TractsList() {
+  const [tracts, setTracts] = useState<Tract[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadTracts();
+  }, []);
+
+  const loadTracts = async () => {
+    try {
+      const data = await getTractsList();
+      setTracts(data);
+    } catch (error) {
+      console.error('Error loading tracts:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load tracts',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTract(id);
+      setTracts(tracts.filter(tract => tract.id !== id));
+      toast({
+        title: 'Success',
+        description: 'Tract deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting tract:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete tract',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const filteredTracts = tracts.filter(tract => {
+    const matchesSearch = 
+      tract.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tract.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tract.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesSearch;
+  });
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <div className="space-y-6 animate-in">
-      <Card className="frosted-glass">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Tracts</CardTitle>
-            <CardDescription>
-              Connect with communities for knowledge sharing
-            </CardDescription>
-          </div>
-          <CreateTractForm />
-        </CardHeader>
-        
-        <CardContent>
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tracts..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          <div className="grid gap-4 sm:grid-cols-2">
-            {filteredTracts.length > 0 ? (
-              filteredTracts.map(tract => (
-                <Link key={tract.id} to={`/tracts/${tract.id}`} className="block">
-                  <Card className="h-full transition-all hover:shadow-subtle">
-                    <CardContent className="p-0">
-                      <div className="p-4">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Avatar className="h-10 w-10 rounded-md">
-                            <AvatarImage src={tract.image} alt={tract.name} />
-                            <AvatarFallback className="rounded-md bg-primary/10 text-primary">
-                              {tract.name.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          
-                          <div>
-                            <h3 className="font-medium text-base">{tract.name}</h3>
-                            <div className="flex items-center text-xs text-muted-foreground">
-                              <Users className="h-3 w-3 mr-1" />
-                              <span>{tract.members} members</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                          {tract.description}
-                        </p>
-                        
-                        <div className="flex flex-wrap gap-1">
-                          {tract.tags.map(tag => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <div className="text-center py-12 col-span-2">
-                <p className="text-muted-foreground">No tracts found.</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex gap-4 mb-6">
+          <Input
+            placeholder="Search tracts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
+
+        <div className="space-y-4">
+          {filteredTracts.map((tract) => (
+            <Card key={tract.id}>
+              <CardContent className="flex items-start justify-between p-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold">{tract.name}</h3>
+                    <div className="flex items-center gap-1 text-sm text-gray-500">
+                      <Users className="h-4 w-4" />
+                      <span>{tract.member_count}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">{tract.description}</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {tract.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(tract.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+
+          {filteredTracts.length === 0 && (
+            <p className="text-center text-gray-500">No tracts found</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

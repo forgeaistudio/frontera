@@ -1,136 +1,158 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { useState } from 'react';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { createInventoryItem } from '@/lib/api';
+import { useToast } from '../ui/use-toast';
+import { Textarea } from '../ui/textarea';
 
-const CATEGORIES = ["Water", "Food", "Medical", "Tools", "Clothing", "Communication"];
+const CATEGORIES = ['Water', 'Food', 'Medical', 'Energy', 'Communication'];
 
-export function AddInventoryForm() {
+export default function AddInventoryForm() {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
-    name: "",
-    category: "",
-    quantity: "",
-    expiryDate: "",
-    location: "",
+    name: '',
+    category: '',
+    quantity: '',
+    unit: '',
+    location: '',
+    expiry_date: '',
+    description: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Add API integration
-    console.log("Form submitted:", formData);
+    setLoading(true);
+
+    try {
+      const quantity = parseInt(formData.quantity);
+      if (isNaN(quantity)) {
+        throw new Error('Quantity must be a number');
+      }
+
+      await createInventoryItem({
+        ...formData,
+        quantity,
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Inventory item added successfully',
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        category: '',
+        quantity: '',
+        unit: '',
+        location: '',
+        expiry_date: '',
+        description: '',
+      });
+    } catch (error) {
+      console.error('Error adding inventory item:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to add inventory item',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData(prev => ({ ...prev, category: value }));
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          <span>Add Item</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Add Inventory Item</DialogTitle>
-          <DialogDescription>
-            Add a new item to your inventory. Fill out the details below.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium">
-              Item Name
-            </label>
+    <Card>
+      <CardHeader>
+        <CardTitle>Add Inventory Item</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              id="name"
+              name="name"
+              placeholder="Item name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter item name"
+              onChange={handleChange}
               required
             />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="category" className="text-sm font-medium">
-              Category
-            </label>
+            
             <Select
               value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value })}
+              onValueChange={handleSelectChange}
+              required
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select category" />
+                <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((category) => (
+                {CATEGORIES.map(category => (
                   <SelectItem key={category} value={category}>
                     {category}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
 
-          <div className="space-y-2">
-            <label htmlFor="quantity" className="text-sm font-medium">
-              Quantity
-            </label>
             <Input
-              id="quantity"
+              name="quantity"
               type="number"
-              min="1"
+              placeholder="Quantity"
               value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              placeholder="Enter quantity"
+              onChange={handleChange}
               required
             />
-          </div>
 
-          <div className="space-y-2">
-            <label htmlFor="expiryDate" className="text-sm font-medium">
-              Expiry Date
-            </label>
             <Input
-              id="expiryDate"
-              type="date"
-              value={formData.expiryDate}
-              onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-              placeholder="Select expiry date"
+              name="unit"
+              placeholder="Unit (e.g., pieces, gallons)"
+              value={formData.unit}
+              onChange={handleChange}
+              required
             />
-          </div>
 
-          <div className="space-y-2">
-            <label htmlFor="location" className="text-sm font-medium">
-              Storage Location
-            </label>
             <Input
-              id="location"
+              name="location"
+              placeholder="Storage location"
               value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="Enter storage location"
+              onChange={handleChange}
               required
+            />
+
+            <Input
+              name="expiry_date"
+              type="date"
+              placeholder="Expiry date"
+              value={formData.expiry_date}
+              onChange={handleChange}
             />
           </div>
 
-          <div className="flex justify-end gap-2 mt-6">
-            <Button type="submit">Add Item</Button>
-          </div>
+          <Textarea
+            name="description"
+            placeholder="Item description"
+            value={formData.description}
+            onChange={handleChange}
+            required
+          />
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Adding...' : 'Add Item'}
+          </Button>
         </form>
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   );
 } 

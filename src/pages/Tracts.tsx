@@ -1,21 +1,23 @@
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Container } from "@/components/ui/Container";
-import { TractsList } from "@/components/tracts/TractsList";
+import { useAuth } from "@/contexts/AuthContext";
+import { AppLayout } from "@/components/layout/AppLayout";
+import TractsList from "@/components/tracts/TractsList";
+import { CreateTractForm } from "@/components/tracts/CreateTractForm";
 
-const Tracts = () => {
+export default function Tracts() {
+  const { user } = useAuth();
+
   return (
-    <div className="min-h-screen flex">
-      <Sidebar />
-      
-      <main className="flex-1 md:ml-56">
-        <Container>
-          <div className="py-6">
-            <TractsList />
+    <AppLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Tracts</h1>
+            <p className="text-muted-foreground">Manage your locations and community</p>
           </div>
-        </Container>
-      </main>
-    </div>
+          <CreateTractForm />
+        </div>
+        <TractsList />
+      </div>
+    </AppLayout>
   );
-};
-
-export default Tracts;
+}

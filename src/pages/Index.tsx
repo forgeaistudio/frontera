@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,7 @@ const Index = () => {
               </h1>
               
               <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Your personal emergency readiness dashboard that brings the prepper community together
+                Your personal emergency readiness dashboard that brings the preparedness community together
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
@@ -104,7 +103,7 @@ const Index = () => {
               <div className="mt-24 mb-12 flex flex-col items-center">
                 <div className="flex items-center justify-center gap-2 text-frontera-600 mb-4">
                   <Shield className="h-5 w-5" />
-                  <span className="font-medium">Trusted by preppers worldwide</span>
+                  <span className="font-medium">Trusted by preparedness enthusiasts worldwide</span>
                 </div>
                 
                 <p className="text-muted-foreground max-w-xl">

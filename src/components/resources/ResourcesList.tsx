@@ -1,160 +1,165 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Filter, BookOpen } from "lucide-react";
-import { ResourceItem } from "./ResourceItem";
-import { AddResourceForm } from "./AddResourceForm";
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '../ui/card';
+import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { getResourcesList, deleteResource, toggleResourceBookmark } from '@/lib/api';
+import { Database } from '@/lib/database.types';
+import { Button } from '../ui/button';
+import { Trash2, Bookmark, BookmarkCheck } from 'lucide-react';
+import { useToast } from '../ui/use-toast';
 
-// Mock resources data
-const MOCK_RESOURCES = [
-  { 
-    id: '1', 
-    title: 'Emergency Water Purification Methods', 
-    type: 'Guide',
-    description: 'Comprehensive guide to purifying water in emergency situations',
-    author: 'Sarah Wilson',
-    dateAdded: '2023-04-15T10:30:00Z',
-    category: 'Water',
-    rating: 4.8,
-    bookmarked: true,
-  },
-  { 
-    id: '2', 
-    title: 'Building a 72-Hour Emergency Kit', 
-    type: 'Checklist',
-    description: 'Step-by-step checklist for assembling a complete 72-hour emergency kit',
-    author: 'John Martinez',
-    dateAdded: '2023-03-10T09:15:00Z',
-    category: 'Preparedness',
-    rating: 4.5,
-    bookmarked: false,
-  },
-  { 
-    id: '3', 
-    title: 'First Aid Essentials: Wound Care', 
-    type: 'Tutorial',
-    description: 'Visual tutorial on proper wound cleaning and dressing techniques',
-    author: 'Dr. Lisa Kim',
-    dateAdded: '2023-05-22T14:45:00Z',
-    category: 'Medical',
-    rating: 4.9,
-    bookmarked: true,
-  },
-  { 
-    id: '4', 
-    title: 'Long-term Food Storage Strategies', 
-    type: 'Guide',
-    description: 'Detailed guide on food preservation methods and storage rotation',
-    author: 'Robert Johnson',
-    dateAdded: '2023-02-18T11:20:00Z',
-    category: 'Food',
-    rating: 4.6,
-    bookmarked: false,
-  },
-];
+type Resource = Database['public']['Tables']['resources']['Row'];
 
-// Resource types and categories for filtering
-const RESOURCE_TYPES = ["All Types", "Guide", "Checklist", "Tutorial", "Template", "Reference"];
-const RESOURCE_CATEGORIES = ["All Categories", "Water", "Food", "Medical", "Preparedness", "Communication", "Shelter"];
+export default function ResourcesList() {
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-export function ResourcesList() {
-  const [resources] = useState(MOCK_RESOURCES);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState("All Types");
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
-  
-  // Filter resources based on search query, type, and category
+  useEffect(() => {
+    loadResources();
+  }, []);
+
+  const loadResources = async () => {
+    try {
+      const data = await getResourcesList();
+      setResources(data);
+    } catch (error) {
+      console.error('Error loading resources:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load resources',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteResource(id);
+      setResources(resources.filter(resource => resource.id !== id));
+      toast({
+        title: 'Success',
+        description: 'Resource deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete resource',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleBookmark = async (id: string, currentValue: boolean) => {
+    try {
+      const updatedResource = await toggleResourceBookmark(id, currentValue);
+      setResources(resources.map(resource => 
+        resource.id === id ? updatedResource : resource
+      ));
+      toast({
+        title: 'Success',
+        description: `Resource ${currentValue ? 'removed from' : 'added to'} bookmarks`,
+      });
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update bookmark',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const filteredResources = resources.filter(resource => {
     const matchesSearch = 
       resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      resource.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesType = selectedType === "All Types" || resource.type === selectedType;
-    const matchesCategory = selectedCategory === "All Categories" || resource.category === selectedCategory;
-    
-    return matchesSearch && matchesType && matchesCategory;
+      resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      resource.author.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = !selectedType || resource.type === selectedType;
+    return matchesSearch && matchesType;
   });
-  
+
+  const types = Array.from(new Set(resources.map(resource => resource.type)));
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <div className="space-y-6 animate-in">
-      <Card className="frosted-glass">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Resource Library</CardTitle>
-            <CardDescription>
-              Knowledge hub for emergency preparedness
-            </CardDescription>
-          </div>
-          <AddResourceForm />
-        </CardHeader>
-        
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search resources..."
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex flex-col sm:flex-row items-center gap-2">
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger className="w-full sm:w-36">
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RESOURCE_TYPES.map(type => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {RESOURCE_CATEGORIES.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            {filteredResources.length > 0 ? (
-              filteredResources.map(resource => (
-                <ResourceItem key={resource.id} resource={resource} />
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <BookOpen className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
-                <p className="text-muted-foreground">No resources found matching your criteria.</p>
-                <p className="text-sm text-muted-foreground/60 mt-1">Try adjusting your search or filters.</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex gap-4 mb-6">
+          <Input
+            placeholder="Search resources..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger className="max-w-[180px]">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Types</SelectItem>
+              {types.map(type => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-4">
+          {filteredResources.map((resource) => (
+            <Card key={resource.id}>
+              <CardContent className="flex items-start justify-between p-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold">{resource.title}</h3>
+                    <span className="text-sm text-gray-500">{resource.type}</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">{resource.description}</p>
+                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                    <span>By {resource.author}</span>
+                    <span>Category: {resource.category}</span>
+                    <span>Rating: {resource.rating}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleToggleBookmark(resource.id, resource.bookmarked)}
+                  >
+                    {resource.bookmarked ? (
+                      <BookmarkCheck className="h-4 w-4" />
+                    ) : (
+                      <Bookmark className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(resource.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {filteredResources.length === 0 && (
+            <p className="text-center text-gray-500">No resources found</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
