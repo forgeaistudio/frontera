@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { InventoryList } from "@/components/inventory/InventoryList";
-import { AddInventoryForm } from "@/components/inventory/AddInventoryForm";
+import InventoryList from "@/components/inventory/InventoryList";
+import AddInventoryForm from "@/components/inventory/AddInventoryForm";
 
 export default function Inventory() {
   const { user } = useAuth();

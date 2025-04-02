@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Database as SchemaDatabase } from './database.types'
 
 // Database types
 export type User = {
@@ -89,15 +90,23 @@ export type Database = {
   }
 }
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// Create a Supabase client for public operations
+export const supabase = createClient<SchemaDatabase>(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+)
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+// Create a Supabase client with service role for admin operations
+export const supabaseAdmin = createClient<SchemaDatabase>(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 // Helper functions for common operations
 export const inventoryApi = {

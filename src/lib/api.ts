@@ -1,25 +1,54 @@
-import { supabase } from './supabase';
-import { Database } from './database.types';
+import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/lib/database.types';
 
 type Tract = Database['public']['Tables']['tracts']['Row'];
 type Inventory = Database['public']['Tables']['inventory']['Row'];
 type Resource = Database['public']['Tables']['resources']['Row'];
+type User = Database['public']['Tables']['users']['Row'];
 
-// Tract APIs
-export const getTractsList = async () => {
+// Create a type for inventory item creation that excludes auto-generated fields
+type CreateInventoryItem = Omit<Database['public']['Tables']['inventory']['Insert'], 'id' | 'created_at' | 'updated_at' | 'user_id'>;
+
+// User APIs
+export const updateUserProfile = async (updates: Partial<User>) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('No user logged in');
+
   const { data, error } = await supabase
-    .from('tracts')
-    .select('*')
-    .order('created_at', { ascending: false });
-  
+    .from('users')
+    .update(updates)
+    .eq('id', user.id)
+    .select()
+    .single();
+
   if (error) throw error;
   return data;
 };
 
-export const createTract = async (tract: Omit<Tract, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+// Tract APIs
+export const getTractsList = async (): Promise<Tract[]> => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('No user logged in');
+
   const { data, error } = await supabase
     .from('tracts')
-    .insert([tract])
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+  
+  if (error) throw error;
+  return data as Tract[];
+};
+
+export const createTract = async (tract: Omit<Tract, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('No user logged in');
+
+  const { data, error } = await supabase
+    .from('tracts')
+    .insert([{ ...tract, user_id: user.id }])
     .select()
     .single();
   
@@ -49,20 +78,29 @@ export const deleteTract = async (id: string) => {
 };
 
 // Inventory APIs
-export const getInventoryList = async () => {
+export const getInventoryList = async (): Promise<Inventory[]> => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('No user logged in');
+
   const { data, error } = await supabase
     .from('inventory')
     .select('*')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
   
   if (error) throw error;
-  return data;
+  return data as Inventory[];
 };
 
-export const createInventoryItem = async (item: Omit<Inventory, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+export const createInventoryItem = async (item: CreateInventoryItem) => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('User not authenticated');
+
   const { data, error } = await supabase
     .from('inventory')
-    .insert([item])
+    .insert([{ ...item, user_id: user.id }])
     .select()
     .single();
   
@@ -93,9 +131,14 @@ export const deleteInventoryItem = async (id: string) => {
 
 // Resource APIs
 export const getResourcesList = async () => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('No user logged in');
+
   const { data, error } = await supabase
     .from('resources')
     .select('*')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
   
   if (error) throw error;
@@ -103,9 +146,13 @@ export const getResourcesList = async () => {
 };
 
 export const createResource = async (resource: Omit<Resource, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('No user logged in');
+
   const { data, error } = await supabase
     .from('resources')
-    .insert([resource])
+    .insert([{ ...resource, user_id: user.id }])
     .select()
     .single();
   

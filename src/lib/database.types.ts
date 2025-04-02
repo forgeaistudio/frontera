@@ -47,6 +47,7 @@ export type Database = {
           unit: string
           updated_at: string
           user_id: string | null
+          status: string | null
         }
         Insert: {
           category?: string | null
@@ -60,6 +61,7 @@ export type Database = {
           unit: string
           updated_at?: string
           user_id?: string | null
+          status?: string | null
         }
         Update: {
           category?: string | null
@@ -73,6 +75,7 @@ export type Database = {
           unit?: string
           updated_at?: string
           user_id?: string | null
+          status?: string | null
         }
         Relationships: [
           {
@@ -99,6 +102,7 @@ export type Database = {
           updated_at: string
           url: string | null
           user_id: string | null
+          added_date: string | null
         }
         Insert: {
           author?: string | null
@@ -114,6 +118,7 @@ export type Database = {
           updated_at?: string
           url?: string | null
           user_id?: string | null
+          added_date?: string | null
         }
         Update: {
           author?: string | null
@@ -129,6 +134,7 @@ export type Database = {
           updated_at?: string
           url?: string | null
           user_id?: string | null
+          added_date?: string | null
         }
         Relationships: [
           {
@@ -191,6 +197,7 @@ export type Database = {
           tags: string[] | null
           updated_at: string
           user_id: string | null
+          difficulty: string | null
         }
         Insert: {
           created_at?: string
@@ -203,6 +210,7 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           user_id?: string | null
+          difficulty?: string | null
         }
         Update: {
           created_at?: string
@@ -215,6 +223,7 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           user_id?: string | null
+          difficulty?: string | null
         }
         Relationships: [
           {
@@ -232,6 +241,9 @@ export type Database = {
           created_at: string
           email: string
           full_name: string | null
+          first_name: string | null
+          last_name: string | null
+          username: string | null
           id: string
           updated_at: string
         }
@@ -240,6 +252,9 @@ export type Database = {
           created_at?: string
           email: string
           full_name?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          username?: string | null
           id?: string
           updated_at?: string
         }
@@ -248,6 +263,9 @@ export type Database = {
           created_at?: string
           email?: string
           full_name?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          username?: string | null
           id?: string
           updated_at?: string
         }

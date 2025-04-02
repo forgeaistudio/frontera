@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ResourcesList } from "@/components/resources/ResourcesList";
+import ResourcesList from "@/components/resources/ResourcesList";
 import { AddResourceForm } from "@/components/resources/AddResourceForm";
 
 export default function Resources() {

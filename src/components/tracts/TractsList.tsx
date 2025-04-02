@@ -4,9 +4,10 @@ import { Input } from '../ui/input';
 import { getTractsList, deleteTract } from '@/lib/api';
 import { Database } from '@/lib/database.types';
 import { Button } from '../ui/button';
-import { Trash2, Users } from 'lucide-react';
+import { Pencil, Trash2, Users } from 'lucide-react';
 import { useToast } from '../ui/use-toast';
 import { Badge } from '../ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 type Tract = Database['public']['Tables']['tracts']['Row'];
 
@@ -54,11 +55,25 @@ export default function TractsList() {
     }
   };
 
+  const getDifficultyBadge = (difficulty: string | null) => {
+    if (!difficulty) return null;
+    const variants: Record<string, "default" | "secondary" | "destructive"> = {
+      'Easy': 'default',
+      'Medium': 'secondary',
+      'Hard': 'destructive'
+    };
+    return (
+      <Badge variant={variants[difficulty] || 'default'}>
+        {difficulty}
+      </Badge>
+    );
+  };
+
   const filteredTracts = tracts.filter(tract => {
     const matchesSearch = 
       tract.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tract.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tract.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      (tract.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (tract.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
   });
 
@@ -67,54 +82,62 @@ export default function TractsList() {
   }
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex gap-4 mb-6">
-          <Input
-            placeholder="Search tracts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-sm"
-          />
-        </div>
+    <div className="space-y-4">
+      <div className="flex items-center gap-4">
+        <Input
+          placeholder="Search tracts..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-sm"
+        />
+      </div>
 
-        <div className="space-y-4">
-          {filteredTracts.map((tract) => (
-            <Card key={tract.id}>
-              <CardContent className="flex items-start justify-between p-4">
-                <div className="flex-1">
+      <div className="grid gap-4">
+        {filteredTracts.map((tract) => (
+          <Card key={tract.id} className="hover:bg-gray-50">
+            <CardContent className="flex items-center justify-between p-6">
+              <div className="flex items-center gap-4">
+                <Avatar>
+                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${tract.name}`} />
+                  <AvatarFallback>{tract.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold">{tract.name}</h3>
-                    <div className="flex items-center gap-1 text-sm text-gray-500">
-                      <Users className="h-4 w-4" />
-                      <span>{tract.member_count}</span>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{tract.description}</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {tract.tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary">
-                        {tag}
+                    {getDifficultyBadge(tract.difficulty)}
+                    {tract.member_count && (
+                      <Badge variant="outline" className="ml-2">
+                        <Users className="mr-1 h-3 w-3" />
+                        {tract.member_count} members
                       </Badge>
-                    ))}
+                    )}
                   </div>
+                  {tract.description && (
+                    <p className="text-sm text-gray-500 mt-1">{tract.description}</p>
+                  )}
+                  {tract.tags && tract.tags.length > 0 && (
+                    <div className="flex gap-1 mt-2">
+                      {tract.tags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(tract.id)}
-                >
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={() => {}}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => handleDelete(tract.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </CardContent>
-            </Card>
-          ))}
-
-          {filteredTracts.length === 0 && (
-            <p className="text-center text-gray-500">No tracts found</p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 }

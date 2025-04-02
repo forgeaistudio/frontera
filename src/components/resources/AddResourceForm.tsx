@@ -25,9 +25,9 @@ const RESOURCE_CATEGORIES = ["Water", "Food", "Medical", "Preparedness", "Commun
 export function AddResourceForm() {
   const [formData, setFormData] = useState({
     title: "",
-    type: "",
+    type: RESOURCE_TYPES[0],
     description: "",
-    category: "",
+    category: RESOURCE_CATEGORIES[0],
     url: "",
     author: "",
   });

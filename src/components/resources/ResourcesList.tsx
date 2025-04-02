@@ -13,7 +13,7 @@ type Resource = Database['public']['Tables']['resources']['Row'];
 export default function ResourcesList() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<string>('');
+  const [selectedType, setSelectedType] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -80,7 +80,7 @@ export default function ResourcesList() {
       resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       resource.author.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = !selectedType || resource.type === selectedType;
+    const matchesType = selectedType === 'all' || resource.type === selectedType;
     return matchesSearch && matchesType;
   });
 
@@ -105,7 +105,7 @@ export default function ResourcesList() {
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               {types.map(type => (
                 <SelectItem key={type} value={type}>
                   {type}

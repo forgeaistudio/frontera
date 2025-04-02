@@ -7,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
+import ResetPassword from './pages/ResetPassword'
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Tracts from "./pages/Tracts";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected routes */}
             <Route

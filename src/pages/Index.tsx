@@ -20,12 +20,12 @@ const Index = () => {
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
-              onClick={() => setShowAuth(true)}
+              asChild
             >
-              Sign In
+              <Link to="/signin">Sign In</Link>
             </Button>
-            <Button onClick={() => setShowAuth(true)}>
-              Get Started
+            <Button asChild>
+              <Link to="/signup">Get Started</Link>
             </Button>
           </div>
         </header>
@@ -49,10 +49,12 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   className="gap-2"
-                  onClick={() => setShowAuth(true)}
+                  asChild
                 >
-                  <span>Create Account</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <Link to="/signup">
+                    <span>Create Account</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </Button>
                 
                 <Button 

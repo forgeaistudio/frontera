@@ -1,0 +1,1 @@
+-- This file is intentionally empty as mock data is now handled in seed.sql 

@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,19 +6,75 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, Save } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { updateUserProfile } from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
 
 export function UserProfile() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const [formData, setFormData] = useState({
+    first_name: user?.user_metadata?.first_name || '',
+    last_name: user?.user_metadata?.last_name || '',
+    username: user?.user_metadata?.username || '',
+    email: user?.email || '',
+    location: '',
+  });
+
+  const locationInputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  useEffect(() => {
+    if (locationInputRef.current && window.google) {
+      autocompleteRef.current = new google.maps.places.Autocomplete(
+        locationInputRef.current,
+        { types: ['(cities)'] }
+      );
+
+      autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current?.getPlace();
+        if (place?.formatted_address) {
+          setFormData(prev => ({ ...prev, location: place.formatted_address }));
+        }
+      });
+    }
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate profile update
-    setTimeout(() => {
+
+    try {
+      await updateUserProfile({
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        username: formData.username,
+        full_name: `${formData.first_name} ${formData.last_name}`.trim(),
+        email: formData.email,
+      });
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update profile",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
-  
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
   return (
     <div className="space-y-6 animate-in">
       <Card className="frosted-glass">
@@ -34,8 +89,10 @@ export function UserProfile() {
           <div className="flex justify-center mb-6">
             <div className="relative">
               <Avatar className="h-24 w-24 border-2 border-white shadow-md">
-                <AvatarImage src="https://i.pravatar.cc/150?img=68" alt="Profile" />
-                <AvatarFallback className="text-xl">JD</AvatarFallback>
+                <AvatarImage src={user?.user_metadata?.avatar_url} alt="Profile" />
+                <AvatarFallback className="text-xl">
+                  {formData.first_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                </AvatarFallback>
               </Avatar>
               
               <Button 
@@ -49,23 +106,39 @@ export function UserProfile() {
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input 
+                id="username"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Enter your username"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="first_name">First Name</Label>
                 <Input 
-                  id="firstName" 
-                  defaultValue="John" 
-                  required 
+                  id="first_name"
+                  name="first_name"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  placeholder="Enter your first name"
                   disabled={isLoading}
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="last_name">Last Name</Label>
                 <Input 
-                  id="lastName" 
-                  defaultValue="Doe" 
-                  required 
+                  id="last_name"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  placeholder="Enter your last name"
                   disabled={isLoading}
                 />
               </div>
@@ -74,10 +147,12 @@ export function UserProfile() {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input 
-                id="email" 
-                type="email" 
-                defaultValue="john.doe@example.com" 
-                required 
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
                 disabled={isLoading}
               />
             </div>
@@ -85,8 +160,12 @@ export function UserProfile() {
             <div className="space-y-2">
               <Label htmlFor="location">Location</Label>
               <Input 
-                id="location" 
-                defaultValue="Portland, OR" 
+                id="location"
+                name="location"
+                ref={locationInputRef}
+                value={formData.location}
+                onChange={handleChange}
+                placeholder="Enter your city"
                 disabled={isLoading}
               />
             </div>
