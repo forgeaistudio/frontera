@@ -67,6 +67,14 @@ const App = () => (
               }
             />
             <Route
+              path="/tracts/:tractId"
+              element={
+                <ProtectedRoute>
+                  <TractDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/profile"
               element={
                 <ProtectedRoute>

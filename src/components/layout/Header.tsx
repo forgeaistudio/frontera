@@ -1,13 +1,66 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, Menu, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AvatarUpload } from "@/components/ui/avatar-upload";
+import { supabase } from "@/lib/supabase";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const isLandingPage = location.pathname === "/";
+  const { user, signOut } = useAuth();
+  const [userData, setUserData] = useState({
+    firstName: "",
+    lastName: "",
+    avatarUrl: "",
+  });
   
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('first_name, last_name, avatar_url')
+            .eq('id', currentUser.id)
+            .single();
+          
+          if (userData) {
+            setUserData({
+              firstName: userData.first_name || "",
+              lastName: userData.last_name || "",
+              avatarUrl: userData.avatar_url || "",
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+    
+    loadUserData();
+  }, []);
+  
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between h-16">
@@ -18,31 +71,80 @@ export function Header() {
           >
             Frontera
           </Link>
-          
-          {isLandingPage && (
-            <nav className="hidden md:flex space-x-1">
-              <NavLink to="/dashboard">Dashboard</NavLink>
-              <NavLink to="/inventory">Inventory</NavLink>
-              <NavLink to="/tracts">Tracts</NavLink>
-              <NavLink to="/resources">Resources</NavLink>
-            </nav>
-          )}
         </div>
         
         {isLandingPage ? (
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
-              <Search className="h-5 w-5" />
-            </Button>
-            
-            <Link to="/profile">
-              <Button variant="ghost" className="hidden md:flex items-center gap-2">
-                <span className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">
-                  JD
-                </span>
-                <span className="hidden lg:inline-block">Profile</span>
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Button variant="ghost" size="icon" className="text-muted-foreground">
+                  <Search className="h-5 w-5" />
+                </Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <AvatarUpload
+                        currentUser={{
+                          ...user,
+                          avatar_url: userData.avatarUrl
+                        }}
+                        firstName={userData.firstName}
+                        size="sm"
+                        showUploadButton={false}
+                      />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {userData.firstName
+                            ? `${userData.firstName} ${userData.lastName || ''}`
+                            : 'User'}
+                        </p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard">Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/inventory">Inventory</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/tracts">Tracts</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/resources">Resources</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile">Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings">Settings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      Log out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" asChild>
+                  <Link to="/signin">Sign In</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/signup">Get Started</Link>
+                </Button>
+              </div>
+            )}
             
             <Button 
               variant="ghost" 
@@ -64,11 +166,30 @@ export function Header() {
       {isLandingPage && isMenuOpen && (
         <div className="md:hidden px-4 py-2 bg-card border-b border-border animate-in">
           <nav className="flex flex-col space-y-1 pb-3">
-            <MobileNavLink to="/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</MobileNavLink>
-            <MobileNavLink to="/inventory" onClick={() => setIsMenuOpen(false)}>Inventory</MobileNavLink>
-            <MobileNavLink to="/tracts" onClick={() => setIsMenuOpen(false)}>Tracts</MobileNavLink>
-            <MobileNavLink to="/resources" onClick={() => setIsMenuOpen(false)}>Resources</MobileNavLink>
-            <MobileNavLink to="/profile" onClick={() => setIsMenuOpen(false)}>Profile</MobileNavLink>
+            {user ? (
+              <>
+                <MobileNavLink to="/dashboard" onClick={() => setIsMenuOpen(false)}>Dashboard</MobileNavLink>
+                <MobileNavLink to="/inventory" onClick={() => setIsMenuOpen(false)}>Inventory</MobileNavLink>
+                <MobileNavLink to="/tracts" onClick={() => setIsMenuOpen(false)}>Tracts</MobileNavLink>
+                <MobileNavLink to="/resources" onClick={() => setIsMenuOpen(false)}>Resources</MobileNavLink>
+                <MobileNavLink to="/profile" onClick={() => setIsMenuOpen(false)}>Profile</MobileNavLink>
+                <MobileNavLink to="/settings" onClick={() => setIsMenuOpen(false)}>Settings</MobileNavLink>
+                <button
+                  onClick={() => {
+                    handleSignOut();
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center px-3 py-2 text-sm hover:bg-accent rounded-md text-destructive"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <MobileNavLink to="/signin" onClick={() => setIsMenuOpen(false)}>Sign In</MobileNavLink>
+                <MobileNavLink to="/signup" onClick={() => setIsMenuOpen(false)}>Get Started</MobileNavLink>
+              </>
+            )}
           </nav>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +8,84 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, Bell, Package, MessageSquare, BookOpen, Map } from "lucide-react";
 import { PreparednessScore } from "@/components/dashboard/PreparednessScore";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { supabase } from "@/lib/supabase";
+import { AvatarUpload } from "@/components/ui/avatar-upload";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [counts, setCounts] = useState({
+    inventory: 0,
+    tracts: 0,
+    bookmarkedResources: 0,
+  });
+  const [userData, setUserData] = useState({
+    firstName: "",
+    lastName: "",
+    avatarUrl: "",
+  });
+  
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('first_name, last_name, avatar_url')
+            .eq('id', currentUser.id)
+            .single();
+          
+          if (userData) {
+            setUserData({
+              firstName: userData.first_name || "",
+              lastName: userData.last_name || "",
+              avatarUrl: userData.avatar_url || "",
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+    
+    loadUserData();
+  }, []);
+  
+  useEffect(() => {
+    const loadCounts = async () => {
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) throw new Error('No user logged in');
+
+        // Get inventory count
+        const { count: inventoryCount } = await supabase
+          .from('inventory')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', currentUser.id);
+
+        // Get tracts count
+        const { count: tractsCount } = await supabase
+          .from('tracts')
+          .select('*', { count: 'exact', head: true });
+
+        // Get resources count (both public and user's)
+        const { count: resourcesCount } = await supabase
+          .from('resources')
+          .select('*', { count: 'exact', head: true })
+          .or(`user_id.is.null,user_id.eq.${currentUser.id}`);
+        
+        setCounts({
+          inventory: inventoryCount || 0,
+          tracts: tractsCount || 0,
+          bookmarkedResources: resourcesCount || 0,
+        });
+      } catch (error) {
+        console.error('Error loading counts:', error);
+      }
+    };
+    
+    loadCounts();
+  }, []);
   
   // Recent activity mock data
   const recentActivity = [
@@ -51,7 +126,7 @@ const Dashboard = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-2xl font-bold mb-2 text-foreground">
-                  Welcome back, {user?.email}
+                  Welcome back, {userData.firstName || user?.email?.split('@')[0]}
                 </h1>
                 <p className="text-muted-foreground">
                   Your preparedness dashboard is ready for you
@@ -75,14 +150,24 @@ const Dashboard = () => {
             
             <CardContent>
               <div className="flex flex-col items-center">
-                <Avatar className="h-20 w-20 mb-4">
-                  <AvatarImage src={user?.user_metadata?.avatar} alt={user?.email} />
-                  <AvatarFallback className="text-lg">
-                    {user?.email?.[0].toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <AvatarUpload
+                  currentUser={{
+                    ...user,
+                    avatar_url: userData.avatarUrl
+                  }}
+                  firstName={userData.firstName}
+                  size="md"
+                  onUploadComplete={(url) => {
+                    setUserData(prev => ({
+                      ...prev,
+                      avatarUrl: url
+                    }));
+                  }}
+                />
                 
-                <h3 className="font-medium text-lg mb-1">{user?.email}</h3>
+                <h3 className="font-medium text-lg mb-1">
+                  {`${userData.firstName} ${userData.lastName}`.trim() || user?.email}
+                </h3>
                 <div className="flex items-center gap-2 mb-4">
                   <Badge variant="secondary">
                     Level 1
@@ -177,7 +262,7 @@ const Dashboard = () => {
             description="Manage your supplies" 
             icon={<Package className="h-10 w-10" />}
             href="/inventory"
-            count={42}
+            count={counts.inventory}
             label="items"
             color="bg-foreground/10 text-foreground"
           />
@@ -187,7 +272,7 @@ const Dashboard = () => {
             description="Join the community" 
             icon={<MessageSquare className="h-10 w-10" />}
             href="/tracts"
-            count={3}
+            count={counts.tracts}
             label="active"
             color="bg-foreground/10 text-foreground"
           />
@@ -197,7 +282,7 @@ const Dashboard = () => {
             description="Access guides & tutorials" 
             icon={<BookOpen className="h-10 w-10" />}
             href="/resources"
-            count={12}
+            count={counts.bookmarkedResources}
             label="bookmarked"
             color="bg-foreground/10 text-foreground"
           />

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { Footer } from "@/components/layout/Footer";
+import { Header } from "@/components/layout/Header";
 import { ArrowRight, Shield, Package, Users, BookOpen } from "lucide-react";
 
 const Index = () => {
@@ -10,26 +11,10 @@ const Index = () => {
   
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
+      <Header />
+      
       {/* Hero Section */}
       <div className="flex-1">
-        <header className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <Link to="/" className="font-semibold text-xl tracking-tight text-frontera-700">
-            Frontera
-          </Link>
-          
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              asChild
-            >
-              <Link to="/signin">Sign In</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/signup">Get Started</Link>
-            </Button>
-          </div>
-        </header>
-        
         <main className="container mx-auto px-4 pt-12 md:pt-24 flex flex-col items-center text-center">
           {showAuth ? (
             <div className="w-full max-w-md mx-auto animate-scale-in">

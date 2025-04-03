@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { getInventoryList, deleteInventoryItem } from '@/lib/api';
@@ -9,6 +8,8 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '../ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '../ui/badge';
+import { Card } from '../ui/card';
+import { Separator } from '../ui/separator';
 
 type Inventory = Database['public']['Tables']['inventory']['Row'];
 
@@ -111,8 +112,8 @@ export default function InventoryList() {
 
       <div className="space-y-4">
         {filteredInventory.map((item) => (
-          <Card key={item.id} className="hover:bg-gray-50">
-            <CardContent className="flex items-center justify-between p-6">
+          <Card key={item.id} className="p-4 hover:bg-accent/5">
+            <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-semibold">{item.name}</h3>
@@ -151,7 +152,7 @@ export default function InventoryList() {
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
-            </CardContent>
+            </div>
           </Card>
         ))}
 

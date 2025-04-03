@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import TractsList from "@/components/tracts/TractsList";
 import { CreateTractForm } from "@/components/tracts/CreateTractForm";
+import { Card } from "@/components/ui/card";
 
 export default function Tracts() {
   const { user } = useAuth();
@@ -16,7 +17,10 @@ export default function Tracts() {
           </div>
           <CreateTractForm />
         </div>
-        <TractsList />
+        
+        <Card className="p-6">
+          <TractsList />
+        </Card>
       </div>
     </AppLayout>
   );

@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import InventoryList from "@/components/inventory/InventoryList";
 import AddInventoryForm from "@/components/inventory/AddInventoryForm";
+import { Card } from "@/components/ui/card";
 
 export default function Inventory() {
   const { user } = useAuth();
@@ -16,7 +17,10 @@ export default function Inventory() {
           </div>
           <AddInventoryForm />
         </div>
-        <InventoryList />
+        
+        <Card className="p-6">
+          <InventoryList />
+        </Card>
       </div>
     </AppLayout>
   );

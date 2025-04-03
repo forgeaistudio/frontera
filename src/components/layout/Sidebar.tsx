@@ -13,6 +13,9 @@ import {
   Menu,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AvatarUpload } from "@/components/ui/avatar-upload";
+import { supabase } from "@/lib/supabase";
+import { useState, useEffect } from "react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -24,6 +27,38 @@ const navigation = [
 export function Sidebar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const [userData, setUserData] = useState({
+    firstName: "",
+    lastName: "",
+    avatarUrl: "",
+  });
+  
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('first_name, last_name, avatar_url')
+            .eq('id', currentUser.id)
+            .single();
+          
+          if (userData) {
+            setUserData({
+              firstName: userData.first_name || "",
+              lastName: userData.last_name || "",
+              avatarUrl: userData.avatar_url || "",
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+    
+    loadUserData();
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -70,11 +105,21 @@ export function Sidebar() {
               variant="ghost"
               className="w-full justify-start gap-2 text-sm font-normal"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                {user?.email?.[0].toUpperCase() || 'U'}
-              </div>
+              <AvatarUpload
+                currentUser={{
+                  ...user,
+                  avatar_url: userData.avatarUrl
+                }}
+                firstName={userData.firstName}
+                size="sm"
+                showUploadButton={false}
+              />
               <div className="flex flex-col items-start">
-                <span className="font-medium">{user?.email}</span>
+                <span className="font-medium">
+                  {userData.firstName
+                    ? `${userData.firstName} ${userData.lastName || ''}`
+                    : user?.email}
+                </span>
                 <span className="text-xs text-muted-foreground">Account</span>
               </div>
             </Button>

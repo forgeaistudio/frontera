@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Send, Users, Info, PinIcon } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/components/ui/use-toast";
 
-// Mock messages data
+// Keep mock messages for now until we implement real-time chat
 const MOCK_MESSAGES = [
   {
     id: '1',
@@ -57,36 +58,109 @@ const MOCK_MESSAGES = [
   },
 ];
 
-// Mock tract data
-const MOCK_TRACT = {
-  id: '2',
-  name: 'Water Purification',
-  description: 'Discussion on water filtration, purification, and storage techniques for emergency situations and everyday use.',
-  members: 64,
-  created: '2023-01-15T00:00:00Z',
-  rules: [
-    'Share evidence-based information only',
-    'Be respectful of differing opinions',
-    'No commercial promotion without mod approval'
-  ],
-  pinnedMessages: ['4']
-};
+interface TractData {
+  id: string;
+  name: string;
+  description: string | null;
+  member_count: number | null;
+  created_at: string;
+  updated_at: string;
+  user_id: string | null;
+  location: string | null;
+  size: string | null;
+  tags: string[] | null;
+}
 
-// Mock members data (simplified)
-const MOCK_MEMBERS = [
-  { id: 'u1', name: 'John Doe', avatar: 'https://i.pravatar.cc/150?img=68', role: 'Member' },
-  { id: 'u2', name: 'Sarah Wilson', avatar: 'https://i.pravatar.cc/150?img=47', role: 'Member' },
-  { id: 'u3', name: 'Mike Chen', avatar: 'https://i.pravatar.cc/150?img=12', role: 'Member' },
-  { id: 'u4', name: 'Lisa Yamada', avatar: 'https://i.pravatar.cc/150?img=25', role: 'Moderator' },
-  { id: 'u5', name: 'Robert Johnson', avatar: 'https://i.pravatar.cc/150?img=32', role: 'Admin' },
-];
+interface TractMember {
+  id: string;
+  user_id: string;
+  role: string;
+  user: {
+    first_name: string;
+    last_name: string;
+    avatar_url: string;
+  };
+}
 
-export function TractChat({ tractId = '2' }) {
+export function TractChat({ tractId }: { tractId?: string }) {
   const [messages] = useState(MOCK_MESSAGES);
-  const [tract] = useState(MOCK_TRACT);
-  const [members] = useState(MOCK_MEMBERS);
   const [newMessage, setNewMessage] = useState("");
-  
+  const [tract, setTract] = useState<TractData | null>(null);
+  const [members, setMembers] = useState<TractMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const loadTractData = async () => {
+      try {
+        if (!tractId) return;
+
+        console.log('Loading tract with ID:', tractId); // Debug log
+
+        // Fetch tract data
+        const { data: tractData, error: tractError } = await supabase
+          .from('tracts')
+          .select(`
+            id,
+            name,
+            description,
+            member_count,
+            created_at,
+            updated_at,
+            user_id,
+            location,
+            size,
+            tags
+          `)
+          .eq('id', tractId)
+          .single();
+
+        if (tractError) {
+          console.error('Error fetching tract:', tractError); // Debug log
+          throw tractError;
+        }
+
+        console.log('Tract data:', tractData); // Debug log
+
+        // Fetch tract members with user data
+        const { data: membersData, error: membersError } = await supabase
+          .from('tract_members')
+          .select(`
+            id,
+            user_id,
+            role,
+            user:users (
+              first_name,
+              last_name,
+              avatar_url
+            )
+          `)
+          .eq('tract_id', tractId);
+
+        if (membersError) {
+          console.error('Error fetching members:', membersError); // Debug log
+          throw membersError;
+        }
+
+        console.log('Members data:', membersData); // Debug log
+
+        setTract(tractData);
+        setMembers(membersData || []);
+      } catch (error) {
+        console.error('Error loading tract data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load tract data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTractData();
+  }, [tractId, toast]);
+
   // Format the timestamp
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -104,6 +178,22 @@ export function TractChat({ tractId = '2' }) {
       setNewMessage("");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!tract) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Tract not found</p>
+      </div>
+    );
+  }
   
   return (
     <div className="animate-in h-full">
@@ -115,7 +205,7 @@ export function TractChat({ tractId = '2' }) {
                 <div>
                   <CardTitle>{tract.name}</CardTitle>
                   <CardDescription>
-                    {tract.members} members
+                    {tract.member_count} members
                   </CardDescription>
                 </div>
                 
@@ -223,16 +313,28 @@ export function TractChat({ tractId = '2' }) {
                   {members.map(member => (
                     <div key={member.id} className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={member.avatar} alt={member.name} />
+                        {member.user?.avatar_url ? (
+                          <AvatarImage src={member.user.avatar_url} alt={`${member.user?.first_name || 'Anonymous'} ${member.user?.last_name || 'User'}`} />
+                        ) : (
+                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${member.id}`} />
+                        )}
                         <AvatarFallback>
-                          {member.name.substring(0, 2).toUpperCase()}
+                          {member.user ? 
+                            `${member.user.first_name?.[0] || ''}${member.user.last_name?.[0] || ''}` :
+                            'AU'
+                          }
                         </AvatarFallback>
                       </Avatar>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm truncate">{member.name}</span>
-                          {member.role !== 'Member' && (
+                          <span className="font-medium text-sm truncate">
+                            {member.user ? 
+                              `${member.user.first_name || ''} ${member.user.last_name || ''}`.trim() || 'Anonymous User' :
+                              'Anonymous User'
+                            }
+                          </span>
+                          {member.role !== 'member' && (
                             <Badge variant="outline" className="text-xs">
                               {member.role}
                             </Badge>
@@ -255,24 +357,26 @@ export function TractChat({ tractId = '2' }) {
                   
                   <Separator />
                   
-                  <div>
-                    <h3 className="font-medium mb-1">Rules</h3>
-                    <ul className="space-y-2">
-                      {tract.rules.map((rule, index) => (
-                        <li key={index} className="text-sm text-muted-foreground flex gap-2">
-                          <span className="font-medium">{index + 1}.</span>
-                          <span>{rule}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  
-                  <Separator />
+                  {tract.tags && tract.tags.length > 0 && (
+                    <>
+                      <div>
+                        <h3 className="font-medium mb-1">Tags</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {tract.tags.map((tag, index) => (
+                            <Badge key={index} variant="secondary">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <Separator />
+                    </>
+                  )}
                   
                   <div>
                     <h3 className="font-medium mb-1">Created</h3>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(tract.created).toLocaleDateString('en-US', {
+                      {new Date(tract.created_at).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'

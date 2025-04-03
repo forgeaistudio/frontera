@@ -1,9 +1,19 @@
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Create auth schema
+CREATE SCHEMA IF NOT EXISTS auth;
+
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
     full_name TEXT,
+    first_name TEXT,
+    last_name TEXT,
+    username TEXT UNIQUE,
     avatar_url TEXT,
+    location TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -19,6 +29,7 @@ CREATE TABLE IF NOT EXISTS inventory (
     category TEXT,
     expiry_date DATE,
     location TEXT,
+    status TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -32,6 +43,10 @@ CREATE TABLE IF NOT EXISTS resources (
     category TEXT,
     url TEXT,
     file_path TEXT,
+    type TEXT,
+    author TEXT,
+    rating DECIMAL(3,2),
+    bookmarked BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -44,6 +59,8 @@ CREATE TABLE IF NOT EXISTS tracts (
     description TEXT,
     location TEXT,
     size TEXT,
+    tags TEXT[] DEFAULT '{}',
+    member_count INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -155,4 +172,4 @@ CREATE TRIGGER update_resources_updated_at
 CREATE TRIGGER update_tracts_updated_at
     BEFORE UPDATE ON tracts
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION update_updated_at_column(); 

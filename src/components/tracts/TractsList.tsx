@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '../ui/card';
+import { Link } from 'react-router-dom';
 import { Input } from '../ui/input';
-import { getTractsList, deleteTract } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { Button } from '../ui/button';
 import { Pencil, Trash2, Users } from 'lucide-react';
 import { useToast } from '../ui/use-toast';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Card } from '../ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Tract = Database['public']['Tables']['tracts']['Row'];
 
@@ -16,6 +18,7 @@ export default function TractsList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadTracts();
@@ -23,8 +26,14 @@ export default function TractsList() {
 
   const loadTracts = async () => {
     try {
-      const data = await getTractsList();
-      setTracts(data);
+      // Fetch tracts
+      const { data, error } = await supabase
+        .from('tracts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTracts(data || []);
     } catch (error) {
       console.error('Error loading tracts:', error);
       toast({
@@ -39,7 +48,13 @@ export default function TractsList() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteTract(id);
+      const { error } = await supabase
+        .from('tracts')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
       setTracts(tracts.filter(tract => tract.id !== id));
       toast({
         title: 'Success',
@@ -81,6 +96,14 @@ export default function TractsList() {
     return <div>Loading...</div>;
   }
 
+  if (tracts.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">No tracts found.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
@@ -94,48 +117,66 @@ export default function TractsList() {
 
       <div className="grid gap-4">
         {filteredTracts.map((tract) => (
-          <Card key={tract.id} className="hover:bg-gray-50">
-            <CardContent className="flex items-center justify-between p-6">
-              <div className="flex items-center gap-4">
-                <Avatar>
-                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${tract.name}`} />
-                  <AvatarFallback>{tract.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold">{tract.name}</h3>
-                    {getDifficultyBadge(tract.difficulty)}
-                    {tract.member_count && (
-                      <Badge variant="outline" className="ml-2">
-                        <Users className="mr-1 h-3 w-3" />
-                        {tract.member_count} members
-                      </Badge>
+          <Link key={tract.id} to={`/tracts/${tract.id}`}>
+            <Card className="p-4 hover:bg-accent/5 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Avatar>
+                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${tract.name}`} />
+                    <AvatarFallback>{tract.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold">{tract.name}</h3>
+                      {tract.member_count && tract.member_count > 0 && (
+                        <Badge variant="outline" className="ml-2">
+                          <Users className="mr-1 h-3 w-3" />
+                          {tract.member_count} members
+                        </Badge>
+                      )}
+                    </div>
+                    {tract.description && (
+                      <p className="text-sm text-gray-500 mt-1">{tract.description}</p>
+                    )}
+                    {tract.tags && tract.tags.length > 0 && (
+                      <div className="flex gap-1 mt-2">
+                        {tract.tags.map((tag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  {tract.description && (
-                    <p className="text-sm text-gray-500 mt-1">{tract.description}</p>
-                  )}
-                  {tract.tags && tract.tags.length > 0 && (
-                    <div className="flex gap-1 mt-2">
-                      {tract.tags.map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                 </div>
+                
+                {tract.user_id === user?.id && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // TODO: Implement edit
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDelete(tract.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={() => {}}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => handleDelete(tract.id)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>

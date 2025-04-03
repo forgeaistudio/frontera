@@ -6,22 +6,80 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, Mail, MapPin, Shield } from "lucide-react";
+import { updateUserProfile } from "@/lib/api";
+import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabase";
+import { AvatarUpload } from "@/components/ui/avatar-upload";
 
 export default function Profile() {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(user?.user_metadata?.name || "");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState(user?.email || "");
-  const [location, setLocation] = useState(user?.user_metadata?.location || "");
+  const [location, setLocation] = useState("");
   const [notifications, setNotifications] = useState(user?.user_metadata?.notifications || true);
   const [privacy, setPrivacy] = useState(user?.user_metadata?.privacy || "public");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implement profile update
-    setIsEditing(false);
+  // Load user profile data from database
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('username, first_name, last_name, location')
+            .eq('id', currentUser.id)
+            .single();
+          
+          if (userData) {
+            setUsername(userData.username || "");
+            setFirstName(userData.first_name || "");
+            setLastName(userData.last_name || "");
+            setLocation(userData.location || "");
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      }
+    };
+    
+    loadUserProfile();
+  }, []);
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
+    try {
+      await updateUserProfile({
+        first_name: firstName,
+        last_name: lastName,
+        username: username,
+        location: location,
+        full_name: `${firstName} ${lastName}`.trim(),
+        updated_at: new Date().toISOString()
+      });
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update profile",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -34,7 +92,8 @@ export default function Profile() {
           </div>
           <Button
             variant={isEditing ? "default" : "outline"}
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => isEditing ? handleSubmit() : setIsEditing(true)}
+            type={isEditing ? "submit" : "button"}
           >
             {isEditing ? "Save Changes" : "Edit Profile"}
           </Button>
@@ -52,23 +111,53 @@ export default function Profile() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="flex items-center gap-6">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={user?.user_metadata?.avatar} alt={name} />
-                    <AvatarFallback className="text-2xl">
-                      {name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <AvatarUpload
+                    currentUser={user}
+                    firstName={firstName}
+                    size="lg"
+                    onUploadComplete={(url) => {
+                      // Update the user's avatar URL in the database
+                      updateUserProfile({
+                        avatar_url: url,
+                        updated_at: new Date().toISOString()
+                      });
+                    }}
+                  />
                   <div className="flex-1">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Display Name</Label>
+                      <Label htmlFor="username">Username</Label>
                       <Input
-                        id="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        id="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         disabled={!isEditing}
-                        placeholder="Enter your display name"
+                        placeholder="Enter your username"
                       />
                     </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Enter your first name"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Enter your last name"
+                    />
                   </div>
                 </div>
 
@@ -79,7 +168,7 @@ export default function Profile() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    disabled={!isEditing}
+                    disabled={true}
                     placeholder="Enter your email address"
                   />
                 </div>
