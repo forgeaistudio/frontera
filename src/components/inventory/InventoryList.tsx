@@ -1,55 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Input } from '../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { getInventoryList, deleteInventoryItem } from '@/lib/api';
-import { Database } from '@/lib/database.types';
+import { deleteInventoryItem } from '@/lib/api';
+import type { Database } from '@/lib/database.types';
 import { Button } from '../ui/button';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { useToast } from '../ui/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '../ui/badge';
 import { Card } from '../ui/card';
-import { Separator } from '../ui/separator';
+import { EditInventoryForm } from './EditInventoryForm';
 
 type Inventory = Database['public']['Tables']['inventory']['Row'];
 
-export default function InventoryList() {
-  const [inventory, setInventory] = useState<Inventory[]>([]);
+interface InventoryListProps {
+  inventory: Inventory[];
+}
+
+export default function InventoryList({ inventory }: InventoryListProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
-
-  useEffect(() => {
-    loadInventory();
-  }, []);
-
-  const loadInventory = async () => {
-    try {
-      console.log('Loading inventory, user:', user);
-      const data = await getInventoryList();
-      console.log('Inventory data received:', data);
-      setInventory(data);
-      setError(null);
-    } catch (error) {
-      console.error('Error loading inventory:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load inventory items');
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to load inventory items',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteInventoryItem(id);
-      setInventory(inventory.filter(item => item.id !== id));
       toast({
         title: 'Success',
         description: 'Item deleted successfully',
@@ -74,15 +46,8 @@ export default function InventoryList() {
   const filteredInventory = inventory.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.location?.toLowerCase() || '').includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
-
-  const categories = Array.from(new Set(inventory.map(item => item.category)));
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <div className="space-y-6">
@@ -94,19 +59,6 @@ export default function InventoryList() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm"
           />
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
@@ -127,7 +79,7 @@ export default function InventoryList() {
                 <div className="mt-2 text-sm text-gray-500 space-x-2">
                   <span>Qty: {item.quantity} {item.unit}</span>
                   <span>•</span>
-                  <span>Location: {item.location}</span>
+                  <span>Location: {item.location || 'No Location'}</span>
                   {item.expiry_date && (
                     <>
                       <span>•</span>
@@ -137,13 +89,7 @@ export default function InventoryList() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {/* TODO: Implement edit */}}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+                <EditInventoryForm item={item} />
                 <Button
                   variant="ghost"
                   size="icon"
