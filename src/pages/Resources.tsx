@@ -2,9 +2,29 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import ResourcesList from "@/components/resources/ResourcesList";
 import { AddResourceForm } from "@/components/resources/AddResourceForm";
+import { ResourceView } from "@/components/resources/ResourceView";
+import { Card } from "@/components/ui/card";
+import { useState } from "react";
+import { Database } from "@/lib/database.types";
+
+type Resource = Database['public']['Tables']['resources']['Row'];
 
 export default function Resources() {
   const { user } = useAuth();
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+
+  const handleResourceSelect = (resource: Resource) => {
+    setSelectedResource(resource);
+  };
+
+  const handleBookmarkToggle = (id: string, currentValue: boolean) => {
+    if (selectedResource && selectedResource.id === id) {
+      setSelectedResource({
+        ...selectedResource,
+        bookmarked: !currentValue
+      });
+    }
+  };
 
   return (
     <AppLayout>
@@ -16,7 +36,24 @@ export default function Resources() {
           </div>
           <AddResourceForm />
         </div>
-        <ResourcesList />
+        
+        <div className="flex gap-6">
+          {/* Resources List - 1/3 width */}
+          <Card className="w-1/3">
+            <ResourcesList 
+              onResourceSelect={handleResourceSelect}
+              selectedResourceId={selectedResource?.id || null}
+            />
+          </Card>
+
+          {/* Resource View - 2/3 width */}
+          <Card className="flex-1">
+            <ResourceView 
+              resource={selectedResource}
+              onBookmarkToggle={handleBookmarkToggle}
+            />
+          </Card>
+        </div>
       </div>
     </AppLayout>
   );

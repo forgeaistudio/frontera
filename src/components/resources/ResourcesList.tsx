@@ -7,10 +7,16 @@ import { Database } from '@/lib/database.types';
 import { Button } from '../ui/button';
 import { Trash2, Bookmark, BookmarkCheck } from 'lucide-react';
 import { useToast } from '../ui/use-toast';
+import { cn } from '@/lib/utils';
 
 type Resource = Database['public']['Tables']['resources']['Row'];
 
-export default function ResourcesList() {
+interface ResourcesListProps {
+  onResourceSelect: (resource: Resource) => void;
+  selectedResourceId: string | null;
+}
+
+export default function ResourcesList({ onResourceSelect, selectedResourceId }: ResourcesListProps) {
   const [resources, setResources] = useState<Resource[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -24,7 +30,11 @@ export default function ResourcesList() {
   const loadResources = async () => {
     try {
       const data = await getResourcesList();
-      setResources(data);
+      setResources(data.map(resource => ({ ...resource, added_date: resource.added_date || '' })));
+      // Select the first resource by default if none is selected
+      if (data.length > 0 && !selectedResourceId) {
+        onResourceSelect(data[0]);
+      }
     } catch (error) {
       console.error('Error loading resources:', error);
       toast({
@@ -91,7 +101,7 @@ export default function ResourcesList() {
   }
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardContent className="pt-6">
         <div className="flex gap-4 mb-6">
           <Input
@@ -115,27 +125,36 @@ export default function ResourcesList() {
           </Select>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {filteredResources.map((resource) => (
-            <Card key={resource.id}>
+            <Card 
+              key={resource.id}
+              className={cn(
+                "cursor-pointer transition-colors",
+                selectedResourceId === resource.id && "bg-accent"
+              )}
+              onClick={() => onResourceSelect(resource)}
+            >
               <CardContent className="flex items-start justify-between p-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold">{resource.title}</h3>
                     <span className="text-sm text-gray-500">{resource.type}</span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">{resource.description}</p>
+                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{resource.description}</p>
                   <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                     <span>By {resource.author}</span>
                     <span>Category: {resource.category}</span>
-                    <span>Rating: {resource.rating}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleToggleBookmark(resource.id, resource.bookmarked)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleBookmark(resource.id, resource.bookmarked);
+                    }}
                   >
                     {resource.bookmarked ? (
                       <BookmarkCheck className="h-4 w-4" />
@@ -146,7 +165,10 @@ export default function ResourcesList() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDelete(resource.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(resource.id);
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
