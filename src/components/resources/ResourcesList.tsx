@@ -2,14 +2,10 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { getResourcesList, deleteResource, toggleResourceBookmark } from '@/lib/api';
-import { Database } from '@/lib/database.types';
-import { Button } from '../ui/button';
-import { Trash2, Bookmark, BookmarkCheck } from 'lucide-react';
+import { getResourcesList } from '@/lib/api';
+import { Resource } from '@/lib/supabase';
 import { useToast } from '../ui/use-toast';
 import { cn } from '@/lib/utils';
-
-type Resource = Database['public']['Tables']['resources']['Row'];
 
 interface ResourcesListProps {
   onResourceSelect: (resource: Resource) => void;
@@ -30,7 +26,7 @@ export default function ResourcesList({ onResourceSelect, selectedResourceId }: 
   const loadResources = async () => {
     try {
       const data = await getResourcesList();
-      setResources(data.map(resource => ({ ...resource, added_date: resource.added_date || '' })));
+      setResources(data);
       // Select the first resource by default if none is selected
       if (data.length > 0 && !selectedResourceId) {
         onResourceSelect(data[0]);
@@ -47,49 +43,11 @@ export default function ResourcesList({ onResourceSelect, selectedResourceId }: 
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteResource(id);
-      setResources(resources.filter(resource => resource.id !== id));
-      toast({
-        title: 'Success',
-        description: 'Resource deleted successfully',
-      });
-    } catch (error) {
-      console.error('Error deleting resource:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete resource',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleToggleBookmark = async (id: string, currentValue: boolean) => {
-    try {
-      const updatedResource = await toggleResourceBookmark(id, currentValue);
-      setResources(resources.map(resource => 
-        resource.id === id ? updatedResource : resource
-      ));
-      toast({
-        title: 'Success',
-        description: `Resource ${currentValue ? 'removed from' : 'added to'} bookmarks`,
-      });
-    } catch (error) {
-      console.error('Error toggling bookmark:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update bookmark',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const filteredResources = resources.filter(resource => {
     const matchesSearch = 
       resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      resource.author.toLowerCase().includes(searchQuery.toLowerCase());
+      (resource.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (resource.author?.toLowerCase() || '').includes(searchQuery.toLowerCase());
     const matchesType = selectedType === 'all' || resource.type === selectedType;
     return matchesSearch && matchesType;
   });
@@ -117,8 +75,8 @@ export default function ResourcesList({ onResourceSelect, selectedResourceId }: 
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
               {types.map(type => (
-                <SelectItem key={type} value={type}>
-                  {type}
+                <SelectItem key={type} value={type || 'uncategorized'}>
+                  {type || 'Uncategorized'}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -139,39 +97,13 @@ export default function ResourcesList({ onResourceSelect, selectedResourceId }: 
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold">{resource.title}</h3>
-                    <span className="text-sm text-gray-500">{resource.type}</span>
+                    <span className="text-sm text-gray-500">{resource.type || 'Uncategorized'}</span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{resource.description}</p>
+                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{resource.description || 'No description available.'}</p>
                   <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                    <span>By {resource.author}</span>
-                    <span>Category: {resource.category}</span>
+                    <span>By {resource.author || 'Unknown'}</span>
+                    <span>Category: {resource.category || 'Uncategorized'}</span>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleBookmark(resource.id, resource.bookmarked);
-                    }}
-                  >
-                    {resource.bookmarked ? (
-                      <BookmarkCheck className="h-4 w-4" />
-                    ) : (
-                      <Bookmark className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(resource.id);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               </CardContent>
             </Card>

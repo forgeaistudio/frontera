@@ -37,9 +37,9 @@ export default function Resources() {
           <AddResourceForm />
         </div>
         
-        <div className="flex gap-6">
+        <div className="flex gap-6 h-[calc(100vh-12rem)]">
           {/* Resources List - 1/3 width */}
-          <Card className="w-1/3">
+          <Card className="w-1/3 h-full">
             <ResourcesList 
               onResourceSelect={handleResourceSelect}
               selectedResourceId={selectedResource?.id || null}
@@ -47,7 +47,7 @@ export default function Resources() {
           </Card>
 
           {/* Resource View - 2/3 width */}
-          <Card className="flex-1">
+          <Card className="flex-1 h-full">
             <ResourceView 
               resource={selectedResource}
               onBookmarkToggle={handleBookmarkToggle}

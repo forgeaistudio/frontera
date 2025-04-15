@@ -3,8 +3,12 @@ import { Database } from '@/lib/database.types';
 
 type Tract = Database['public']['Tables']['tracts']['Row'];
 type Inventory = Database['public']['Tables']['inventory']['Row'];
-type Resource = Database['public']['Tables']['resources']['Row'];
+type DatabaseResource = Database['public']['Tables']['resources']['Row'];
 type User = Database['public']['Tables']['users']['Row'];
+
+type Resource = DatabaseResource & {
+  added_date: string;
+};
 
 // Create a type for inventory item creation that excludes auto-generated fields
 type CreateInventoryItem = Omit<Database['public']['Tables']['inventory']['Insert'], 'id' | 'created_at' | 'updated_at' | 'user_id'>;
@@ -130,7 +134,7 @@ export const deleteInventoryItem = async (id: string) => {
 };
 
 // Resource APIs
-export const getResourcesList = async () => {
+export const getResourcesList = async (): Promise<Resource[]> => {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!user) throw new Error('No user logged in');
@@ -142,7 +146,10 @@ export const getResourcesList = async () => {
     .order('created_at', { ascending: false });
   
   if (error) throw error;
-  return data;
+  return (data as DatabaseResource[]).map(resource => ({
+    ...resource,
+    added_date: resource.added_date || resource.created_at
+  }));
 };
 
 export const createResource = async (resource: Omit<Resource, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {

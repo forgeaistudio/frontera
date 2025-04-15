@@ -77,10 +77,6 @@ export function Header() {
           <div className="flex items-center space-x-2">
             {user ? (
               <>
-                <Button variant="ghost" size="icon" className="text-muted-foreground">
-                  <Search className="h-5 w-5" />
-                </Button>
-                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">

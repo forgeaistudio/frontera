@@ -17,25 +17,15 @@ export type Inventory = {
   name: string
   category: string
   quantity: number
+  unit: string
   expiry_date: string | null
   location: string
+  status: string
   created_at: string
   updated_at: string
 }
 
-export type Resource = {
-  id: string
-  user_id: string
-  title: string
-  type: string
-  description: string
-  author: string
-  category: string
-  rating: number
-  bookmarked: boolean
-  created_at: string
-  updated_at: string
-}
+export type Resource = Database['public']['Tables']['resources']['Row'];
 
 export type Tract = {
   id: string
